@@ -338,6 +338,7 @@
     <div id="gameUI">
         <span id="scoreDisplay">Coins: 0</span>
         <span id="lifeDisplay">Life: <span id="lifeHearts"></span></span>
+        <span id="levelDisplay">Level: 1</span>
     </div>
 
     <button id="buyCoinsButton">Buy More Coins!</button>
@@ -364,6 +365,7 @@
         const lifeDisplay = document.getElementById('lifeDisplay');
         const lifeHearts = document.getElementById('lifeHearts');
         const messageBox = document.getElementById('messageBox');
+        const levelDisplay = document.getElementById('levelDisplay'); // New element for level display
 
         canvas.width = window.innerWidth > 480 ? 480 : window.innerWidth;
         canvas.height = window.innerHeight > 800 ? 800 : window.innerHeight;
@@ -402,6 +404,7 @@
             responsiveness: 3, // All cars are super responsive
             currentLane: 1 // Start in middle lane (0, 1, 2)
         };
+        // Initialize player's x position to the center of the starting lane
         player.x = lanePositions[player.currentLane] - player.width / 2;
 
 
@@ -411,6 +414,7 @@
         let gameRunning = false;
         let animationFrameId;
         let lastTouchX = null;
+        let initialTouchX = null; // To track start of swipe
 
         const levelData = [
             { difficulty: 'Super Easy', truckInterval: 1500, truckSpeed: 3, coinInterval: 1000 },
@@ -461,6 +465,7 @@
                 equipCar(equippedCarId);
                 updateScoreDisplay();
                 updateLifeDisplay();
+                updateLevelDisplay(); // Initial level display
             }
         }
 
@@ -537,9 +542,8 @@
                 saveGameData();
                 updateLifeDisplay();
             } else {
-                console.warn(`Attempted to equip car ${car ? car.name : carId} before its image was fully loaded.`);
-                // Fallback to default car image if the selected one isn't ready
-                playerCarImg = cars[0].image;
+                console.warn(`Attempted to equip car ${car ? car.name : carId} before its image was fully loaded. Falling back to default.`);
+                playerCarImg = cars[0].image; // Fallback to Basic Car image
                 player.maxLife = cars[0].maxLife;
                 player.life = Math.min(player.life, cars[0].maxLife);
                 player.responsiveness = cars[0].responsiveness;
@@ -578,13 +582,6 @@
                 ctx.fillStyle = 'blue';
                 ctx.fillRect(player.x, player.y, player.width, player.height);
             }
-
-            // Optional: Draw player's current lane for debugging/visual feedback
-            // ctx.fillStyle = 'rgba(0, 255, 0, 0.2)'; // Green transparent overlay
-            // ctx.fillRect(lanePositions[player.currentLane] - laneWidth / 2, 0, laneWidth, canvas.height);
-            // ctx.font = '16px Inter';
-            // ctx.fillStyle = 'white';
-            // ctx.fillText(`Player Lane: ${player.currentLane}`, 10, 30);
         }
 
         function drawTrucks() {
@@ -595,10 +592,6 @@
                     ctx.fillStyle = 'red';
                     ctx.fillRect(truck.x, truck.y, truck.width, truck.height);
                 }
-                // Optional: Draw truck's lane for debugging
-                // ctx.font = '16px Inter';
-                // ctx.fillStyle = 'white';
-                // ctx.fillText(`Truck Lane: ${truck.lane}`, truck.x, truck.y - 5);
             });
         }
 
@@ -618,17 +611,13 @@
         function update() {
             if (!gameRunning) return;
 
-            // Update player position based on dx and responsiveness
-            player.x += player.dx * player.responsiveness;
+            // Smoothly move player towards the center of their current lane
+            const targetX = lanePositions[player.currentLane] - player.width / 2;
+            player.x += (targetX - player.x) * 0.2 * player.responsiveness; // Adjust speed to snap
 
-            // Keep player within canvas bounds
+            // Keep player within canvas bounds (safety net, should be handled by lane snapping)
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-
-            // Determine player's current lane
-            player.currentLane = Math.floor((player.x + player.width / 2) / laneWidth);
-            // Clamp player lane to valid range [0, numLanes - 1]
-            player.currentLane = Math.max(0, Math.min(numLanes - 1, player.currentLane));
 
 
             trucks.forEach((truck, index) => {
@@ -649,7 +638,7 @@
                     playSound(crashSound);
                     player.life--;
                     updateLifeDisplay();
-                    trucks.splice(index, 1);
+                    trucks.splice(index, 1); // Remove collided truck
                     if (player.life <= 0) {
                         gameOver();
                     }
@@ -681,7 +670,8 @@
             if (levelProgress >= levelThreshold && currentLevelIndex < levelData.length - 1) {
                 currentLevelIndex++;
                 levelProgress = 0;
-                showMessage(`Level Up! Difficulty: ${levelData[currentLevelIndex].difficulty}`);
+                updateLevelDisplay(); // Update level text
+                showMessage(`Level ${currentLevelIndex + 1}!`);
             }
 
             if (Date.now() - lastTruckSpawnTime > levelData[currentLevelIndex].truckInterval) {
@@ -710,7 +700,8 @@
             const truckWidth = 60;
             const truckHeight = 100;
             const randomLane = Math.floor(Math.random() * numLanes);
-            const x = lanePositions[randomLane] - truckWidth / 2; // Center truck in its lane
+            // Position truck centered within its lane
+            const x = lanePositions[randomLane] - truckWidth / 2;
             trucks.push({
                 x: x,
                 y: -truckHeight,
@@ -723,13 +714,14 @@
         function spawnCoin() {
             const coinSize = 30;
             const randomLane = Math.floor(Math.random() * numLanes);
-            const x = lanePositions[randomLane] - coinSize / 2; // Center coin in its lane
+            // Position coin centered within its lane
+            const x = lanePositions[randomLane] - coinSize / 2;
             coins.push({
                 x: x,
                 y: -coinSize,
                 width: coinSize,
                 height: coinSize,
-                lane: randomLane // Store coin's lane (for consistency, though not used in collision)
+                lane: randomLane // Store coin's lane (for consistency)
             });
         }
 
@@ -754,22 +746,28 @@
             lifeHearts.innerHTML = heartsHtml;
         }
 
+        function updateLevelDisplay() {
+            levelDisplay.textContent = `Level: ${currentLevelIndex + 1}`;
+        }
+
         function startGame() {
             gameOverlay.style.display = 'none';
             shopSection.style.display = 'none';
             document.getElementById('gameUI').style.display = 'flex';
             buyCoinsButton.style.display = 'block';
 
-            player.x = lanePositions[player.currentLane] - player.width / 2; // Reset player to middle of starting lane
+            player.currentLane = 1; // Always start in the middle lane
+            player.x = lanePositions[player.currentLane] - player.width / 2; // Snap player to center of starting lane
             player.y = canvas.height - 100;
-            player.life = player.maxLife;
+            player.life = player.maxLife; // Reset life to max for equipped car
             trucks = [];
             coins = [];
             updateScoreDisplay();
             updateLifeDisplay();
 
-            currentLevelIndex = 0;
+            currentLevelIndex = 0; // Reset level to 0 (Level 1)
             levelProgress = 0;
+            updateLevelDisplay(); // Update level display on game start
 
             gameRunning = true;
             
@@ -808,8 +806,11 @@
             saveGameData();
         }
 
+        const swipeThreshold = 30; // Minimum pixels for a swipe to register
+
         function handleTouchStart(e) {
             e.preventDefault();
+            initialTouchX = e.touches[0].clientX;
             lastTouchX = e.touches[0].clientX;
         }
 
@@ -819,12 +820,27 @@
 
             const currentTouchX = e.touches[0].clientX;
             const deltaX = currentTouchX - lastTouchX;
-            player.dx = deltaX * 0.1;
+            player.dx = deltaX * 0.1; // Still allow smooth visual movement during swipe
             lastTouchX = currentTouchX;
         }
 
-        function handleTouchEnd() {
-            player.dx = 0;
+        function handleTouchEnd(e) {
+            player.dx = 0; // Stop horizontal movement
+            if (initialTouchX === null) return;
+
+            const finalTouchX = e.changedTouches[0].clientX;
+            const swipeDistance = finalTouchX - initialTouchX;
+
+            if (Math.abs(swipeDistance) > swipeThreshold) {
+                if (swipeDistance < 0) { // Swiped left
+                    player.currentLane = Math.max(0, player.currentLane - 1);
+                } else { // Swiped right
+                    player.currentLane = Math.min(numLanes - 1, player.currentLane + 1);
+                }
+                // Snap player to the center of the new lane immediately after swipe
+                player.x = lanePositions[player.currentLane] - player.width / 2;
+            }
+            initialTouchX = null;
             lastTouchX = null;
         }
 
