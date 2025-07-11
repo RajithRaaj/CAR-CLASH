@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Car Dodger</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+        }
+        canvas {
+            background-color: #555;
+            display: block;
+            touch-action: none;
+        }
+        #gameOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            z-index: 10;
+            border-radius: 15px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #gameOverlay h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #gameOverlay p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        #gameOverlay button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #4CAF50;
+            color: white;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        #gameOverlay button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+        #gameOverlay button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        #gameOverlay button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #redeemSection {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #redeemInput {
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+            width: 70%;
+            max-width: 250px;
+        }
+        #redeemButton {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease;
+        }
+        #redeemButton:hover {
+            background-color: #0056b3;
+        }
+        #shopSection, #gameUI {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            z-index: 11;
+            border-radius: 15px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #shopSection h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .carOption {
+            border: 2px solid #666;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+        }
+        .carOption:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        }
+        .carOption img {
+            width: 100px;
+            height: auto;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .carOption button {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .carOption button:hover {
+            background-color: #0056b3;
+        }
+        .carOption button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #carOptionsContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        #gameUI {
+            display: flex;
+            background: none;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 10px;
+            z-index: 9;
+            pointer-events: none;
+        }
+        #gameUI span {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            pointer-events: auto;
+        }
+        #buyCoinsButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #FFD700;
+            color: black;
+            z-index: 12;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        #buyCoinsButton:hover {
+            background-color: #e6c200;
+            transform: translateY(-2px);
+        }
+        #buyCoinsButton:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        #redeemMessage {
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="gameOverlay">
+        <h1>Car Dodger</h1>
+        <p>Loading game assets...</p>
+        <button id="startButton" disabled>Start Game</button>
+        <button id="shopButtonFromOverlay" disabled>Shop</button>
+        <div id="redeemSection">
+            <input type="text" id="redeemInput" placeholder="Enter redeem code" disabled>
+            <button id="redeemButton" disabled>Redeem</button>
+            <p id="redeemMessage" style="color: yellow;"></p>
+        </div>
+    </div>
+
+    <div id="shopSection">
+        <h2>Car Shop</h2>
+        <p id="currentCoinsShop">Coins: 0</p>
+        <div id="carOptionsContainer">
+        </div>
+        <button id="backToMenuButton">Back to Menu</button>
+    </div>
+
+    <div id="gameUI">
+        <span id="scoreDisplay">Coins: 0</span>
+        <span id="lifeDisplay">Life: </span>
+    </div>
+
+    <button id="buyCoinsButton">Buy More Coins!</button>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const gameOverlay = document.getElementById('gameOverlay');
+        const startButton = document.getElementById('startButton');
+        const shopButtonFromOverlay = document.getElementById('shopButtonFromOverlay');
+        const redeemInput = document.getElementById('redeemInput');
+        const redeemButton = document.getElementById('redeemButton');
+        const redeemMessage = document.getElementById('redeemMessage');
+        const buyCoinsButton = document.getElementById('buyCoinsButton');
+
+        const shopSection = document.getElementById('shopSection');
+        const currentCoinsShop = document.getElementById('currentCoinsShop');
+        const carOptionsContainer = document.getElementById('carOptionsContainer');
+        const backToMenuButton = document.getElementById('backToMenuButton');
+
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const lifeDisplay = document.getElementById('lifeDisplay');
+
+        canvas.width = window.innerWidth > 480 ? 480 : window.innerWidth;
+        canvas.height = window.innerHeight > 800 ? 800 : window.innerHeight;
+
+        let playerCarImg = new Image();
+        playerCarImg.src = 'https://i.ibb.co/fVNPtx6v/Gemini-Generated-Image-qe77lnqe77lnqe77-Photoroom-removebg-preview-1.png';
+
+        const truckImg = new Image();
+        truckImg.src = 'https://i.ibb.co/DgbdMRRk/Gemini-Generated-Image-gmkk2sgmkk2sgmkk-removebg-preview.png';
+
+        const coinImg = new Image();
+        // Updated coin image URL to a more reliable placeholder
+        coinImg.src = 'https://placehold.co/30x30/FFD700/000000?text=Coin';
+
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 100,
+            width: 50,
+            height: 90,
+            speed: 5,
+            dx: 0,
+            life: 3,
+            maxLife: 3,
+            responsiveness: 1
+        };
+
+        let trucks = [];
+        let coins = [];
+        let score = 0;
+        let gameRunning = false;
+        let animationFrameId;
+        let lastTouchX = null;
+
+        const levelData = [
+            { difficulty: 'Super Easy', truckInterval: 1500, truckSpeed: 3, coinInterval: 1000 },
+            { difficulty: 'Easy', truckInterval: 1200, truckSpeed: 4, coinInterval: 900 },
+            { difficulty: 'Medium', truckInterval: 900, truckSpeed: 5, coinInterval: 800 },
+            { difficulty: 'Between Medium and Hard', truckInterval: 700, truckSpeed: 6, coinInterval: 700 },
+            { difficulty: 'Hard', truckInterval: 500, truckSpeed: 7, coinInterval: 600 }
+        ];
+        let currentLevelIndex = 0;
+        let levelProgress = 0;
+        const levelThreshold = 50;
+
+        const cars = [
+            { id: 1, name: 'Basic Car', img: 'https://i.ibb.co/fVNPtx6v/Gemini-Generated-Image-qe77lnqe77lnqe77-Photoroom-removebg-preview-1.png', price: 0, maxLife: 3, responsiveness: 1 },
+            { id: 2, name: 'Sporty Ride', img: 'https://i.ibb.co/VMy42P8/redcar.png', price: 50, maxLife: 5, responsiveness: 1.5 },
+            { id: 3, name: 'Armored Beast', img: 'https://i.ibb.co/K2s34gW/greencar.png', price: 150, maxLife: 7, responsiveness: 2 },
+            { id: 4, name: 'Ultimate Racer', img: 'https://i.ibb.co/L5hY0q0/yellowcar.png', price: 300, maxLife: 10, responsiveness: 2.5 }
+        ];
+        let ownedCars = [1];
+        let equippedCarId = 1;
+
+        let backgroundMusic = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.3;
+
+        const crashSound = new Audio('https://www.soundjay.com/free-sound-effects/crash-sound-effect-1.mp3');
+        crashSound.volume = 0.7;
+
+        const carRunningSound = new Audio('https://www.soundjay.com/free-sound-effects/car-starting-sound-effect.mp3');
+        carRunningSound.loop = true;
+        carRunningSound.volume = 0.5;
+
+        const coinSound = new Audio('https://www.soundjay.com/free-sound-effects/coins-sound-effect.mp3');
+        coinSound.volume = 0.7;
+
+        const redeemCodes = {
+            "RAAJ": { coins: 50, used: false },
+            "TONY": { coins: 1000, used: false }
+        };
+
+        let imagesLoadedCount = 0;
+        const totalImages = 3; // playerCarImg, truckImg, coinImg
+
+        function imageLoaded() {
+            imagesLoadedCount++;
+            if (imagesLoadedCount === totalImages) {
+                // All initial images are loaded, enable buttons and update overlay text
+                startButton.disabled = false;
+                shopButtonFromOverlay.disabled = false;
+                redeemInput.disabled = false;
+                redeemButton.disabled = false;
+                gameOverlay.querySelector('p').textContent = 'Swipe left/right to avoid trucks and collect coins!';
+                
+                // Initialize game data and display after images are loaded
+                loadGameData();
+                equipCar(equippedCarId); // Ensure the equipped car's stats and image are set on load
+                updateScoreDisplay(); // Update score display after loading data
+                updateLifeDisplay(); // Update life display after equipping car
+            }
+        }
+
+        // Attach onload and onerror handlers for initial images
+        playerCarImg.onload = imageLoaded;
+        playerCarImg.onerror = () => { console.error("Failed to load player car image."); imageLoaded(); };
+        
+        truckImg.onload = imageLoaded;
+        truckImg.onerror = () => { console.error("Failed to load truck image."); imageLoaded(); };
+
+        coinImg.onload = imageLoaded;
+        coinImg.onerror = () => { console.error("Failed to load coin image."); imageLoaded(); };
+
+        function playSound(sound) {
+            sound.currentTime = 0;
+            sound.play();
+        }
+
+        function loadGameData() {
+            const savedCoins = localStorage.getItem('playerCoins');
+            if (savedCoins) {
+                score = parseInt(savedCoins);
+            }
+            const savedOwnedCars = localStorage.getItem('ownedCars');
+            if (savedOwnedCars) {
+                ownedCars = JSON.parse(savedOwnedCars);
+            }
+            const savedEquippedCarId = localStorage.getItem('equippedCarId');
+            if (savedEquippedCarId) {
+                equippedCarId = parseInt(savedEquippedCarId);
+            }
+            for (const code in redeemCodes) {
+                const used = localStorage.getItem(`redeemCode_${code}_used`);
+                if (used === 'true') {
+                    redeemCodes[code].used = true;
+                }
+            }
+        }
+
+        function saveGameData() {
+            localStorage.setItem('playerCoins', score);
+            localStorage.setItem('ownedCars', JSON.stringify(ownedCars));
+            localStorage.setItem('equippedCarId', equippedCarId);
+            for (const code in redeemCodes) {
+                localStorage.setItem(`redeemCode_${code}_used`, redeemCodes[code].used);
+            }
+        }
+
+        function equipCar(carId) {
+            const car = cars.find(c => c.id === carId);
+            if (car) {
+                equippedCarId = car.id;
+                // Only change src if it's different to avoid unnecessary reloads
+                if (playerCarImg.src !== car.img) {
+                    playerCarImg.src = car.img;
+                }
+                player.maxLife = car.maxLife;
+                player.life = Math.min(player.life, player.maxLife);
+                player.responsiveness = car.responsiveness;
+                saveGameData();
+                updateLifeDisplay();
+            }
+        }
+
+        function drawPlayer() {
+            // Only draw if the image is loaded and not broken
+            if (playerCarImg.complete && playerCarImg.naturalWidth > 0) {
+                ctx.drawImage(playerCarImg, player.x, player.y, player.width, player.height);
+            } else {
+                // Fallback: draw a colored rectangle if image fails to load
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+            }
+        }
+
+        function drawTrucks() {
+            trucks.forEach(truck => {
+                // Only draw if the image is loaded and not broken
+                if (truckImg.complete && truckImg.naturalWidth > 0) {
+                    ctx.drawImage(truckImg, truck.x, truck.y, truck.width, truck.height);
+                } else {
+                    // Fallback: draw a colored rectangle
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(truck.x, truck.y, truck.width, truck.height);
+                }
+            });
+        }
+
+        function drawCoins() {
+            coins.forEach(coin => {
+                // Only draw if the image is loaded and not broken
+                if (coinImg.complete && coinImg.naturalWidth > 0) {
+                    ctx.drawImage(coinImg, coin.x, coin.y, coin.width, coin.height);
+                } else {
+                    // Fallback: draw a colored circle
+                    ctx.fillStyle = 'gold';
+                    ctx.beginPath();
+                    ctx.arc(coin.x + coin.width / 2, coin.y + coin.height / 2, coin.width / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function update() {
+            if (!gameRunning) return;
+
+            player.x += player.dx * player.responsiveness;
+
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+            trucks.forEach((truck, index) => {
+                truck.y += levelData[currentLevelIndex].truckSpeed;
+                if (truck.y > canvas.height) {
+                    trucks.splice(index, 1);
+                    levelProgress++;
+                }
+
+                if (
+                    player.x < truck.x + truck.width &&
+                    player.x + player.width > truck.x &&
+                    player.y < truck.y + truck.height &&
+                    player.y + player.height > truck.y
+                ) {
+                    playSound(crashSound);
+                    player.life--;
+                    updateLifeDisplay();
+                    trucks.splice(index, 1);
+                    if (player.life <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+
+            coins.forEach((coin, index) => {
+                coin.y += levelData[currentLevelIndex].truckSpeed;
+                if (coin.y > canvas.height) {
+                    coins.splice(index, 1);
+                    levelProgress++;
+                }
+
+                if (
+                    player.x < coin.x + coin.width &&
+                    player.x + player.width > coin.x &&
+                    player.y < coin.y + coin.height &&
+                    player.y + player.height > coin.y
+                ) {
+                    playSound(coinSound);
+                    score += 1;
+                    updateScoreDisplay();
+                    coins.splice(index, 1);
+                    levelProgress++;
+                }
+            });
+
+            if (levelProgress >= levelThreshold && currentLevelIndex < levelData.length - 1) {
+                currentLevelIndex++;
+                levelProgress = 0;
+            }
+
+            // Spawn trucks and coins based on intervals
+            if (Date.now() - lastTruckSpawnTime > levelData[currentLevelIndex].truckInterval) {
+                spawnTruck();
+                lastTruckSpawnTime = Date.now();
+            }
+
+            if (Date.now() - lastCoinSpawnTime > levelData[currentLevelIndex].coinInterval) {
+                spawnCoin();
+                lastCoinSpawnTime = Date.now();
+            }
+
+            draw();
+            animationFrameId = requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#666';
+            ctx.fillRect(canvas.width / 2 - 5, 0, 10, canvas.height);
+            ctx.fillRect(canvas.width / 4 - 5, 0, 5, canvas.height);
+            ctx.fillRect(canvas.width * 3 / 4 - 5, 0, 5, canvas.height);
+
+            drawTrucks();
+            drawCoins();
+            drawPlayer();
+        }
+
+        function spawnTruck() {
+            const truckWidth = 60;
+            const truckHeight = 100;
+            const x = Math.random() * (canvas.width - truckWidth);
+            trucks.push({
+                x: x,
+                y: -truckHeight,
+                width: truckWidth,
+                height: truckHeight,
+            });
+        }
+
+        function spawnCoin() {
+            const coinSize = 30;
+            const x = Math.random() * (canvas.width - coinSize);
+            coins.push({
+                x: x,
+                y: -coinSize,
+                width: coinSize,
+                height: coinSize,
+            });
+        }
+
+        let lastTruckSpawnTime = 0;
+        let lastCoinSpawnTime = 0;
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Coins: ${score}`;
+            currentCoinsShop.textContent = `Coins: ${score}`;
+            saveGameData();
+        }
+
+        function updateLifeDisplay() {
+            lifeDisplay.textContent = `Life: ${player.life}/${player.maxLife}`;
+        }
+
+        function startGame() {
+            gameOverlay.style.display = 'none';
+            shopSection.style.display = 'none';
+            document.getElementById('gameUI').style.display = 'flex';
+            buyCoinsButton.style.display = 'block';
+
+            player.x = canvas.width / 2 - player.width / 2;
+            player.y = canvas.height - 100;
+            player.life = player.maxLife;
+            trucks = [];
+            coins = [];
+            updateScoreDisplay();
+            updateLifeDisplay();
+
+            currentLevelIndex = 0;
+            levelProgress = 0;
+
+            gameRunning = true;
+            
+            // Explicitly pause and reset current time for a clean start
+            carRunningSound.pause();
+            carRunningSound.currentTime = 0;
+            backgroundMusic.pause();
+            backgroundMusic.currentTime = 0;
+
+            // Attempt to play, catching any potential errors like AbortError
+            carRunningSound.play().catch(error => {
+                if (error.name !== 'AbortError') {
+                    console.warn("Car running sound play error:", error);
+                }
+            });
+            backgroundMusic.play().catch(error => {
+                if (error.name !== 'AbortError') {
+                    console.warn("Background music play error:", error);
+                }
+            });
+            
+            lastTruckSpawnTime = Date.now();
+            lastCoinSpawnTime = Date.now();
+            animationFrameId = requestAnimationFrame(update);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            carRunningSound.pause();
+            backgroundMusic.pause();
+            gameOverlay.style.display = 'flex';
+            document.getElementById('gameUI').style.display = 'none';
+            buyCoinsButton.style.display = 'none';
+            document.querySelector('#gameOverlay h1').textContent = 'Game Over!';
+            document.querySelector('#gameOverlay p').textContent = `You collected ${score} coins.`;
+            startButton.textContent = 'Play Again';
+            saveGameData();
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            lastTouchX = e.touches[0].clientX;
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (lastTouchX === null) return;
+
+            const currentTouchX = e.touches[0].clientX;
+            const deltaX = currentTouchX - lastTouchX;
+            player.dx = deltaX * 0.1;
+            lastTouchX = currentTouchX;
+        }
+
+        function handleTouchEnd() {
+            player.dx = 0;
+            lastTouchX = null;
+        }
+
+        startButton.addEventListener('click', startGame);
+
+        shopButtonFromOverlay.addEventListener('click', () => {
+            gameOverlay.style.display = 'none';
+            shopSection.style.display = 'flex';
+            renderShop();
+        });
+
+        backToMenuButton.addEventListener('click', () => {
+            shopSection.style.display = 'none';
+            gameOverlay.style.display = 'flex';
+            document.querySelector('#gameOverlay h1').textContent = 'Car Dodger';
+            document.querySelector('#gameOverlay p').textContent = 'Swipe left/right to avoid trucks and collect coins!';
+            startButton.textContent = 'Start Game';
+        });
+
+        buyCoinsButton.addEventListener('click', () => {
+            window.open('https://tally.so/r/3x7Bl5', '_blank');
+        });
+
+        function renderShop() {
+            currentCoinsShop.textContent = `Coins: ${score}`;
+            carOptionsContainer.innerHTML = '';
+            cars.forEach(car => {
+                const carOptionDiv = document.createElement('div');
+                carOptionDiv.className = 'carOption';
+                carOptionDiv.innerHTML = `
+                    <h3>${car.name}</h3>
+                    <img src="${car.img}" alt="${car.name}">
+                    <p>Life: ${car.maxLife}</p>
+                    <p>Responsiveness: ${car.responsiveness}</p>
+                    <p>${ownedCars.includes(car.id) ? 'Owned' : `Price: ${car.price} coins`}</p>
+                    <button data-car-id="${car.id}" ${ownedCars.includes(car.id) ? 'disabled' : ''}>
+                        ${ownedCars.includes(car.id) ? 'Owned' : 'Buy'}
+                    </button>
+                    <button data-car-id="${car.id}" class="equipButton" ${equippedCarId === car.id ? 'disabled' : ''}>
+                        ${equippedCarId === car.id ? 'Equipped' : 'Equip'}
+                    </button>
+                `;
+                carOptionsContainer.appendChild(carOptionDiv);
+            });
+
+            carOptionsContainer.querySelectorAll('.carOption button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const carId = parseInt(e.target.dataset.carId);
+                    const selectedCar = cars.find(c => c.id === carId);
+
+                    if (e.target.textContent === 'Buy') {
+                        if (score >= selectedCar.price) {
+                            score -= selectedCar.price;
+                            ownedCars.push(selectedCar.id);
+                            saveGameData();
+                            renderShop();
+                            updateScoreDisplay();
+                            alert(`You bought the ${selectedCar.name}!`);
+                        } else {
+                            alert('Not enough coins!');
+                        }
+                    } else if (e.target.textContent === 'Equip') {
+                        if (ownedCars.includes(carId)) {
+                            equipCar(carId);
+                            renderShop();
+                            alert(`You equipped the ${selectedCar.name}!`);
+                        }
+                    }
+                });
+            });
+        }
+
+        redeemButton.addEventListener('click', () => {
+            const code = redeemInput.value.toUpperCase();
+            if (redeemCodes[code]) {
+                if (!redeemCodes[code].used) {
+                    score += redeemCodes[code].coins;
+                    redeemCodes[code].used = true;
+                    saveGameData();
+                    updateScoreDisplay();
+                    redeemMessage.textContent = `Redeemed ${redeemCodes[code].coins} coins!`;
+                    redeemInput.value = '';
+                } else {
+                    redeemMessage.textContent = 'This code has already been used.';
+                }
+            } else {
+                redeemMessage.textContent = 'Invalid redeem code.';
+            }
+        });
+
+        // Event listeners for touch input
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd);
+
+        // Ensure canvas resizes with window for better mobile compatibility
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth > 480 ? 480 : window.innerWidth;
+            canvas.height = window.innerHeight > 800 ? 800 : window.innerHeight;
+            player.y = canvas.height - 100;
+            if (gameRunning) {
+                draw();
+            }
+        });
+    </script>
+</body>
+</html>
