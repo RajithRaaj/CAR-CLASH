@@ -365,13 +365,13 @@
         const lifeDisplay = document.getElementById('lifeDisplay');
         const lifeHearts = document.getElementById('lifeHearts');
         const messageBox = document.getElementById('messageBox');
-        const levelDisplay = document.getElementById('levelDisplay'); // New element for level display
+        const levelDisplay = document.getElementById('levelDisplay');
 
         canvas.width = window.innerWidth > 480 ? 480 : window.innerWidth;
         canvas.height = window.innerHeight > 800 ? 800 : window.innerHeight;
 
-        // Define lane properties
-        const numLanes = 3;
+        // Define lane properties - now 6 lanes
+        const numLanes = 6;
         const laneWidth = canvas.width / numLanes;
         const lanePositions = []; // Center X positions for each lane
         for (let i = 0; i < numLanes; i++) {
@@ -383,28 +383,31 @@
             { id: 1, name: 'Basic Car', img: 'https://i.ibb.co/fVNPtx6v/Gemini-Generated-Image-qe77lnqe77lnqe77-Photoroom-removebg-preview-1.png', price: 0, maxLife: 3, responsiveness: 3, image: null },
             { id: 2, name: 'Sporty Ride', img: 'https://i.ibb.co/VMy42P8/redcar.png', price: 50, maxLife: 5, responsiveness: 3, image: null },
             { id: 3, name: 'Armored Beast', img: 'https://i.ibb.co/K2s34gW/greencar.png', price: 150, maxLife: 7, responsiveness: 3, image: null },
-            { id: 4, name: 'Ultimate Racer', img: 'https://i.ibb.co/L5hY0q0/yellowcar.png', price: 300, maxLife: 10, responsiveness: 3, image: null }
+            { id: 4, name: 'Ultimate Racer', img: 'https://i.ibb.co/L5hY0q0/yellowcar.png', price: 300, maxLife: 10, responsiveness: 3, image: null },
+            // New successor cars
+            { id: 5, name: 'Elite Cruiser', img: 'https://i.ibb.co/Y7yJMr1b/Gemini-Generated-Image-dkjl1odkjl1odkjl-removebg-preview.png', price: 500, maxLife: 12, responsiveness: 3, image: null },
+            { id: 6, name: 'Hyper Drive', img: 'https://i.ibb.co/mFFb2gFQ/Gemini-Generated-Image-2ckob02ckob02cko-1-removebg-preview.png', price: 800, maxLife: 15, responsiveness: 3, image: null },
+            { id: 7, name: 'Cosmic Voyager', img: 'https://i.ibb.co/FbLTVGYW/Gemini-Generated-Image-265ph1265ph1265p-removebg-preview.png', price: 1200, maxLife: 20, responsiveness: 3, image: null }
         ];
 
-        let playerCarImg = null; // Will be set to the Image object of the equipped car
+        let playerCarImg = null;
         const truckImg = new Image();
-        truckImg.src = 'https://i.ibb.co/ycp6ZCqp/Gemini-Generated-Image-zi574pzi574pzi57-removebg-preview.png'; // Updated truck image
+        truckImg.src = 'https://i.ibb.co/ycp6ZCqp/Gemini-Generated-Image-zi574pzi574pzi57-removebg-preview.png';
 
         const coinImg = new Image();
         coinImg.src = 'https://placehold.co/30x30/FFD700/000000?text=Coin';
 
         const player = {
-            x: 0, // Will be set to a lane position
+            x: 0,
             y: canvas.height - 100,
             width: 50,
             height: 90,
             dx: 0,
             life: 3,
             maxLife: 3,
-            responsiveness: 3, // All cars are super responsive
-            currentLane: 1 // Start in middle lane (0, 1, 2)
+            responsiveness: 3,
+            currentLane: Math.floor(numLanes / 2) // Start in a central lane for 6 lanes (index 2 or 3)
         };
-        // Initialize player's x position to the center of the starting lane
         player.x = lanePositions[player.currentLane] - player.width / 2;
 
 
@@ -414,7 +417,7 @@
         let gameRunning = false;
         let animationFrameId;
         let lastTouchX = null;
-        let initialTouchX = null; // To track start of swipe
+        let initialTouchX = null;
 
         const levelData = [
             { difficulty: 'Super Easy', truckInterval: 1500, truckSpeed: 3, coinInterval: 1000 },
@@ -427,7 +430,7 @@
         let levelProgress = 0;
         const levelThreshold = 50;
 
-        let ownedCars = [1]; // Player starts with Basic Car
+        let ownedCars = [1];
         let equippedCarId = 1;
 
         let backgroundMusic = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
@@ -465,17 +468,17 @@
                 equipCar(equippedCarId);
                 updateScoreDisplay();
                 updateLifeDisplay();
-                updateLevelDisplay(); // Initial level display
+                updateLevelDisplay();
             }
         }
 
-        // Load all images at start
+        // Load all images at start, including new car images
         cars.forEach(car => {
             const img = new Image();
             img.src = car.img;
             img.onload = imageLoaded;
             img.onerror = () => { console.error(`Failed to load car image: ${car.img}`); imageLoaded(); };
-            car.image = img; // Store the Image object
+            car.image = img;
         });
 
         truckImg.onload = imageLoaded;
@@ -533,17 +536,17 @@
 
         function equipCar(carId) {
             const car = cars.find(c => c.id === carId);
-            if (car && car.image.complete && car.image.naturalWidth > 0) {
+            if (car && car.image && car.image.complete && car.image.naturalWidth > 0) {
                 equippedCarId = car.id;
-                playerCarImg = car.image; // Assign the pre-loaded Image object
+                playerCarImg = car.image;
                 player.maxLife = car.maxLife;
-                player.life = Math.min(player.life, player.maxLife); // Ensure current life doesn't exceed new max life
-                player.responsiveness = car.responsiveness; // Set responsiveness from car data
+                player.life = Math.min(player.life, player.maxLife);
+                player.responsiveness = car.responsiveness;
                 saveGameData();
                 updateLifeDisplay();
             } else {
                 console.warn(`Attempted to equip car ${car ? car.name : carId} before its image was fully loaded. Falling back to default.`);
-                playerCarImg = cars[0].image; // Fallback to Basic Car image
+                playerCarImg = cars[0].image;
                 player.maxLife = cars[0].maxLife;
                 player.life = Math.min(player.life, cars[0].maxLife);
                 player.responsiveness = cars[0].responsiveness;
@@ -552,19 +555,16 @@
         }
 
         let roadLineYOffset = 0;
-        const roadLineSpeed = 5; // Should match truck speed for visual consistency
+        const roadLineSpeed = 5;
 
         function drawRoad() {
-            ctx.fillStyle = '#555'; // Road color
+            ctx.fillStyle = '#555';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw dashed lane lines
-            ctx.strokeStyle = '#AAA'; // White-ish for lines
+            ctx.strokeStyle = '#AAA';
             ctx.lineWidth = 5;
-            ctx.setLineDash([20, 20]); // Dashed lines
-
-            // Animate road lines
-            roadLineYOffset = (roadLineYOffset + roadLineSpeed) % 40; // 40 is sum of dash and gap
+            ctx.setLineDash([20, 20]);
+            roadLineYOffset = (roadLineYOffset + roadLineSpeed) % 40;
 
             for (let i = 1; i < numLanes; i++) {
                 ctx.beginPath();
@@ -572,7 +572,7 @@
                 ctx.lineTo(lanePositions[i] - laneWidth / 2, canvas.height);
                 ctx.stroke();
             }
-            ctx.setLineDash([]); // Reset line dash for other drawings
+            ctx.setLineDash([]);
         }
 
         function drawPlayer() {
@@ -611,11 +611,9 @@
         function update() {
             if (!gameRunning) return;
 
-            // Smoothly move player towards the center of their current lane
             const targetX = lanePositions[player.currentLane] - player.width / 2;
-            player.x += (targetX - player.x) * 0.2 * player.responsiveness; // Adjust speed to snap
+            player.x += (targetX - player.x) * 0.2 * player.responsiveness;
 
-            // Keep player within canvas bounds (safety net, should be handled by lane snapping)
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 
@@ -627,8 +625,9 @@
                     levelProgress++;
                 }
 
-                // Precise Collision detection: AABB + Lane Check
-                // Collision only if in the same lane AND bounding boxes overlap
+                // Collision detection: AABB + Lane Check
+                // Check if the player's bounding box overlaps with the truck's bounding box AND they are in the same lane.
+                // The lane check is crucial to prevent "near miss" collisions.
                 if (
                     player.currentLane === truck.lane &&
                     player.x < truck.x + truck.width &&
@@ -639,7 +638,7 @@
                     playSound(crashSound);
                     player.life--;
                     updateLifeDisplay();
-                    trucks.splice(index, 1); // Remove collided truck
+                    trucks.splice(index, 1);
                     if (player.life <= 0) {
                         gameOver();
                     }
@@ -653,7 +652,7 @@
                     levelProgress++;
                 }
 
-                // Coin collection detection (AABB, no lane check needed for coins)
+                // Coin collection detection (AABB)
                 if (
                     player.x < coin.x + coin.width &&
                     player.x + player.width > coin.x &&
@@ -671,7 +670,7 @@
             if (levelProgress >= levelThreshold && currentLevelIndex < levelData.length - 1) {
                 currentLevelIndex++;
                 levelProgress = 0;
-                updateLevelDisplay(); // Update level text
+                updateLevelDisplay();
                 showMessage(`Level ${currentLevelIndex + 1}!`);
             }
 
@@ -691,7 +690,7 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawRoad(); // Draw animated road
+            drawRoad();
             drawTrucks();
             drawCoins();
             drawPlayer();
@@ -708,7 +707,7 @@
                 y: -truckHeight,
                 width: truckWidth,
                 height: truckHeight,
-                lane: randomLane // Store truck's lane
+                lane: randomLane
             });
         }
 
@@ -722,7 +721,7 @@
                 y: -coinSize,
                 width: coinSize,
                 height: coinSize,
-                lane: randomLane // Store coin's lane (for consistency)
+                lane: randomLane
             });
         }
 
@@ -739,9 +738,9 @@
             let heartsHtml = '';
             for (let i = 0; i < player.maxLife; i++) {
                 if (i < player.life) {
-                    heartsHtml += '❤️'; // Full heart
+                    heartsHtml += '❤️';
                 } else {
-                    heartsHtml += '🖤'; // Empty heart
+                    heartsHtml += '�';
                 }
             }
             lifeHearts.innerHTML = heartsHtml;
@@ -757,18 +756,18 @@
             document.getElementById('gameUI').style.display = 'flex';
             buyCoinsButton.style.display = 'block';
 
-            player.currentLane = 1; // Always start in the middle lane
-            player.x = lanePositions[player.currentLane] - player.width / 2; // Snap player to center of starting lane
+            player.currentLane = Math.floor(numLanes / 2); // Start in a central lane for 6 lanes
+            player.x = lanePositions[player.currentLane] - player.width / 2;
             player.y = canvas.height - 100;
-            player.life = player.maxLife; // Reset life to max for equipped car
+            player.life = player.maxLife;
             trucks = [];
             coins = [];
             updateScoreDisplay();
             updateLifeDisplay();
 
-            currentLevelIndex = 0; // Reset level to 0 (Level 1)
+            currentLevelIndex = 0;
             levelProgress = 0;
-            updateLevelDisplay(); // Update level display on game start
+            updateLevelDisplay();
 
             gameRunning = true;
             
@@ -807,7 +806,7 @@
             saveGameData();
         }
 
-        const swipeThreshold = 30; // Minimum pixels for a swipe to register
+        const swipeThreshold = 30;
 
         function handleTouchStart(e) {
             e.preventDefault();
@@ -821,12 +820,12 @@
 
             const currentTouchX = e.touches[0].clientX;
             const deltaX = currentTouchX - lastTouchX;
-            player.dx = deltaX * 0.1; // Still allow smooth visual movement during swipe
+            player.dx = deltaX * 0.1;
             lastTouchX = currentTouchX;
         }
 
         function handleTouchEnd(e) {
-            player.dx = 0; // Stop horizontal movement
+            player.dx = 0;
             if (initialTouchX === null) return;
 
             const finalTouchX = e.changedTouches[0].clientX;
@@ -838,7 +837,6 @@
                 } else { // Swiped right
                     player.currentLane = Math.min(numLanes - 1, player.currentLane + 1);
                 }
-                // Snap player to the center of the new lane immediately after swipe
                 player.x = lanePositions[player.currentLane] - player.width / 2;
             }
             initialTouchX = null;
@@ -892,21 +890,21 @@
                     const carId = parseInt(e.target.dataset.carId);
                     const selectedCar = cars.find(c => c.id === carId);
 
-                    if (e.target.classList.contains('buyButton')) { // Check class for buy button
+                    if (e.target.classList.contains('buyButton')) {
                         if (score >= selectedCar.price) {
                             score -= selectedCar.price;
                             ownedCars.push(selectedCar.id);
                             saveGameData();
-                            renderShop(); // Re-render shop to update button states
+                            renderShop();
                             updateScoreDisplay();
                             showMessage(`You bought the ${selectedCar.name}!`);
                         } else {
                             showMessage('Not enough coins!');
                         }
-                    } else if (e.target.classList.contains('equipButton')) { // Check class for equip button
+                    } else if (e.target.classList.contains('equipButton')) {
                         if (ownedCars.includes(carId)) {
                             equipCar(carId);
-                            renderShop(); // Re-render shop to update button states
+                            renderShop();
                             showMessage(`You equipped the ${selectedCar.name}!`);
                         }
                     }
@@ -935,22 +933,19 @@
             }
         });
 
-        // Event listeners for touch input
         canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
         canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
         canvas.addEventListener('touchend', handleTouchEnd);
 
-        // Ensure canvas resizes with window for better mobile compatibility
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth > 480 ? 480 : window.innerWidth;
             canvas.height = window.innerHeight > 800 ? 800 : window.innerHeight;
             player.y = canvas.height - 100;
-            // Recalculate lane positions on resize
             lanePositions.length = 0;
             for (let i = 0; i < numLanes; i++) {
                 lanePositions.push(i * (canvas.width / numLanes) + (canvas.width / numLanes) / 2);
             }
-            player.x = lanePositions[player.currentLane] - player.width / 2; // Snap player to center of their lane
+            player.x = lanePositions[player.currentLane] - player.width / 2;
             if (gameRunning) {
                 draw();
             }
@@ -958,3 +953,4 @@
     </script>
 </body>
 </html>
+�
